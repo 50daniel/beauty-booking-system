@@ -1,0 +1,1235 @@
+:root {
+  --bg: #f5f1ec;
+  --surface: #ffffff;
+  --surface-soft: #fbf8f3;
+  --text: #241f1c;
+  --muted: #716861;
+  --line: #ded5cb;
+  --accent: #177e89;
+  --accent-dark: #0f5961;
+  --rose: #b74d65;
+  --green: #1f7a4f;
+  --shadow: 0 18px 45px rgba(61, 45, 31, 0.11);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family:
+    "Noto Sans TC",
+    "Microsoft JhengHei",
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+}
+
+a {
+  color: inherit;
+}
+
+.shell {
+  width: min(1120px, calc(100% - 32px));
+  margin: 0 auto;
+  padding: 36px 0;
+}
+
+.hero,
+.panel,
+.section {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  padding: 28px;
+}
+
+.hero {
+  min-height: 360px;
+  display: grid;
+  align-content: center;
+}
+
+.eyebrow {
+  margin: 0 0 8px;
+  color: var(--accent-dark);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+h1,
+h2,
+h3,
+p {
+  margin-top: 0;
+}
+
+h1 {
+  margin-bottom: 16px;
+  font-size: clamp(34px, 6vw, 64px);
+  line-height: 1.05;
+}
+
+h2 {
+  margin-bottom: 0;
+  font-size: 28px;
+}
+
+h3 {
+  margin-bottom: 8px;
+  font-size: 18px;
+}
+
+p {
+  color: var(--muted);
+  line-height: 1.75;
+}
+
+.heroText {
+  max-width: 760px;
+  font-size: 18px;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.actions a,
+.textLink {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  border-radius: 8px;
+  background: var(--accent);
+  color: #fff;
+  font-weight: 800;
+  padding: 0 18px;
+  text-decoration: none;
+}
+
+.actions a:last-child {
+  background: var(--rose);
+}
+
+.textLink.secondary,
+.actions a.secondary {
+  background: var(--green);
+}
+
+.section {
+  margin-top: 18px;
+}
+
+.sectionHeading {
+  margin-bottom: 16px;
+}
+
+.toolGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.toolCard {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-soft);
+  padding: 16px;
+}
+
+.bookingShell {
+  width: min(1440px, calc(100% - 32px));
+  margin: 0 auto;
+  padding: 24px 0;
+}
+
+.bookingHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 18px;
+}
+
+.bookingHeader h1 {
+  font-size: clamp(32px, 5vw, 52px);
+}
+
+.bookingHeader p {
+  max-width: 760px;
+  margin-bottom: 0;
+}
+
+.bookingGrid {
+  display: grid;
+  grid-template-columns: 320px minmax(0, 1fr) 360px;
+  gap: 16px;
+  align-items: start;
+}
+
+.sectionHeading {
+  margin-bottom: 16px;
+}
+
+.servicePicker,
+.bookingForm {
+  display: grid;
+  gap: 12px;
+}
+
+.selectCard {
+  display: grid;
+  gap: 7px;
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-soft);
+  color: var(--text);
+  padding: 14px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.selectCard.isActive {
+  border-color: var(--accent);
+  outline: 3px solid rgba(23, 126, 137, 0.16);
+}
+
+.selectCard span:last-child {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.colorDot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+}
+
+.fieldGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+label {
+  display: grid;
+  gap: 7px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.requiredMark {
+  color: var(--rose);
+  font-weight: 900;
+}
+
+.formHint {
+  margin: -2px 0 2px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+input,
+select,
+textarea {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--text);
+  font: inherit;
+  padding: 11px 12px;
+}
+
+textarea {
+  resize: vertical;
+}
+
+.slotPanel {
+  margin-top: 16px;
+}
+
+.slotGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(92px, 1fr));
+  gap: 8px;
+}
+
+.slotButton {
+  min-height: 44px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--text);
+  font: inherit;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.slotButton.isActive {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #fff;
+}
+
+.emptyState {
+  border: 1px dashed var(--line);
+  border-radius: 8px;
+  background: var(--surface-soft);
+  color: var(--muted);
+  padding: 18px;
+  text-align: center;
+}
+
+.requestPanel {
+  position: sticky;
+  top: 16px;
+}
+
+.selectedSummary {
+  display: grid;
+  gap: 5px;
+  min-height: 66px;
+  border: 1px dashed var(--accent);
+  border-radius: 8px;
+  background: #eef9f9;
+  color: var(--accent-dark);
+  margin-bottom: 14px;
+  padding: 12px;
+}
+
+.selectedSummary span {
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.primaryButton {
+  min-height: 48px;
+  border: 0;
+  border-radius: 8px;
+  background: var(--accent);
+  color: #fff;
+  font: inherit;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.primaryButton:disabled {
+  cursor: wait;
+  opacity: 0.7;
+}
+
+.formMessage {
+  display: grid;
+  gap: 4px;
+  border-radius: 8px;
+  margin: 0 0 12px;
+  padding: 12px;
+  font-weight: 800;
+  line-height: 1.6;
+}
+
+.formMessage strong {
+  color: var(--text);
+  font-size: 15px;
+}
+
+.formMessage span,
+.formMessage small {
+  display: block;
+}
+
+.formMessage small {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.formMessage.success {
+  border: 1px solid rgba(31, 122, 79, 0.25);
+  background: #e7f4ed;
+  color: var(--green);
+}
+
+.formMessage.error {
+  border: 1px solid rgba(183, 77, 101, 0.25);
+  background: #fae7ec;
+  color: var(--rose);
+}
+
+.formMessage.loading {
+  border: 1px solid var(--line);
+  background: var(--surface-soft);
+  color: var(--muted);
+}
+
+.loginShell {
+  width: min(520px, calc(100% - 32px));
+  min-height: 100vh;
+  display: grid;
+  align-items: center;
+  margin: 0 auto;
+  padding: 24px 0;
+}
+
+.loginPanel h1 {
+  font-size: clamp(32px, 5vw, 48px);
+}
+
+.loginHint {
+  border-top: 1px solid var(--line);
+  margin-top: 16px;
+  padding-top: 14px;
+}
+
+.loginHint p {
+  margin-bottom: 4px;
+  font-size: 14px;
+}
+
+.adminShell {
+  width: min(1440px, calc(100% - 32px));
+  margin: 0 auto;
+  padding: 24px 0;
+}
+
+.adminHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 18px;
+}
+
+.adminHeader h1 {
+  font-size: clamp(32px, 5vw, 52px);
+}
+
+.adminHeader p {
+  max-width: 760px;
+  margin-bottom: 0;
+}
+
+.headerActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.metricGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.metricCard {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  padding: 18px;
+}
+
+.metricCard strong {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 32px;
+}
+
+.metricCard span {
+  color: var(--muted);
+  font-weight: 800;
+}
+
+.adminMessage {
+  border-radius: 8px;
+  background: #eef9f9;
+  color: var(--accent-dark);
+  margin-bottom: 16px;
+  padding: 12px 14px;
+  font-weight: 900;
+}
+
+.adminGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.memberPanel {
+  grid-column: 1 / -1;
+}
+
+.adminList,
+.memberList {
+  display: grid;
+  gap: 12px;
+}
+
+.adminCard,
+.memberCard {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-soft);
+  padding: 14px;
+}
+
+.appointmentSummary h3,
+.memberCard h3 {
+  margin-bottom: 8px;
+  font-size: 18px;
+}
+
+.appointmentSummary p,
+.memberCard p {
+  margin-bottom: 4px;
+  font-size: 14px;
+}
+
+.statusBadge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  border-radius: 999px;
+  margin-bottom: 10px;
+  padding: 0 10px;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.statusBadge.pending {
+  background: #fff1d9;
+  color: #a96511;
+}
+
+.statusBadge.confirmed,
+.statusBadge.completed {
+  background: #e7f4ed;
+  color: var(--green);
+}
+
+.statusBadge.rejected,
+.statusBadge.cancelled,
+.statusBadge.no_show {
+  background: #fae7ec;
+  color: var(--rose);
+}
+
+.buttonRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.buttonRow.three {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.dangerButton,
+.warningButton {
+  min-height: 44px;
+  border: 0;
+  border-radius: 8px;
+  color: #fff;
+  font: inherit;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.dangerButton {
+  background: var(--rose);
+}
+
+.warningButton {
+  background: #a96511;
+}
+
+.memberCard {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.memberCard span {
+  flex: 0 0 auto;
+  border-radius: 999px;
+  background: #eef9f9;
+  color: var(--accent-dark);
+  padding: 6px 10px;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.calendarShell {
+  width: min(1580px, calc(100% - 32px));
+  margin: 0 auto;
+  padding: 24px 0;
+}
+
+.calendarLayout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 380px;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.calendarMain {
+  overflow: hidden;
+}
+
+.calendarToolbar {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  justify-content: flex-end;
+  margin-bottom: 14px;
+}
+
+.calendarToolbar label {
+  width: min(280px, 100%);
+}
+
+.calendarViewSwitch {
+  display: inline-grid;
+  grid-template-columns: repeat(3, 1fr);
+  overflow: hidden;
+  border: 1px solid var(--accent);
+  border-radius: 8px;
+}
+
+.calendarViewSwitch button {
+  min-width: 54px;
+  min-height: 44px;
+  border: 0;
+  border-right: 1px solid var(--accent);
+  background: #fff;
+  color: var(--accent-dark);
+  font: inherit;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.calendarViewSwitch button:last-child {
+  border-right: 0;
+}
+
+.calendarViewSwitch button.isActive {
+  background: var(--accent);
+  color: #fff;
+}
+
+.staffDayBoard {
+  border-top: 1px solid var(--line);
+  margin-top: 18px;
+  padding-top: 18px;
+}
+
+.staffScheduleColumns {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+}
+
+.staffScheduleColumn {
+  display: grid;
+  align-content: start;
+  gap: 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-soft);
+  padding: 12px;
+}
+
+.staffScheduleHeader {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 8px;
+  border-left: 4px solid var(--accent);
+  padding-left: 8px;
+}
+
+.staffScheduleHeader span,
+.staffColorDot {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+}
+
+.staffScheduleHeader h3 {
+  margin: 0;
+  font-size: 15px;
+}
+
+.staffScheduleHeader small,
+.dayAppointment small {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.dayAppointment {
+  display: grid;
+  gap: 4px;
+  border-left: 4px solid var(--accent);
+  border-radius: 8px;
+  background: #fff;
+  padding: 10px;
+}
+
+.dayAppointment span {
+  font-weight: 900;
+}
+
+.pendingSidebar {
+  position: sticky;
+  top: 16px;
+  max-height: calc(100vh - 48px);
+  overflow: auto;
+}
+
+.fc {
+  font-family: inherit;
+}
+
+.fc .fc-button-primary {
+  border-color: var(--accent);
+  background: var(--accent);
+}
+
+.fc .fc-toolbar-title {
+  font-size: 22px;
+}
+
+.fc .fc-event {
+  border-radius: 6px;
+  padding: 2px 4px;
+}
+
+.scheduleLayout {
+  display: grid;
+  grid-template-columns: 300px minmax(0, 1fr) 380px;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.scheduleRows {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.scheduleHelp {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-soft);
+  margin-bottom: 14px;
+  padding: 12px;
+}
+
+.scheduleHelp p {
+  margin-bottom: 0;
+  font-size: 14px;
+}
+
+.scheduleCardGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.scheduleDayCard {
+  display: grid;
+  gap: 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-soft);
+  padding: 12px;
+}
+
+.scheduleDayCard.enabled {
+  border-color: var(--accent);
+  background: #eef9f9;
+}
+
+.dayTitle {
+  font-size: 15px;
+  font-weight: 900;
+}
+
+.timePair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.monthlyControls {
+  display: grid;
+  grid-template-columns: 220px 180px minmax(0, 1fr);
+  gap: 14px;
+  align-items: end;
+  margin-bottom: 16px;
+}
+
+.scheduleLegend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.legendItem {
+  display: inline-flex;
+  align-items: center;
+  min-height: 36px;
+  border-radius: 999px;
+  padding: 0 12px;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.legendItem.working {
+  background: #e7f4ed;
+  color: var(--green);
+}
+
+.legendItem.timeOff {
+  background: #fae7ec;
+  color: var(--rose);
+}
+
+.legendItem.unset {
+  background: var(--surface-soft);
+  color: var(--muted);
+}
+
+.legendItem.mixed {
+  background: #fff4db;
+  color: #936000;
+}
+
+.monthlyScheduleLayout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 360px;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.monthCalendar {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.weekdayHeader {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 900;
+  text-align: center;
+}
+
+.monthDay {
+  display: grid;
+  align-content: start;
+  gap: 6px;
+  min-height: 112px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-soft);
+  color: var(--text);
+  padding: 10px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.monthDay strong {
+  font-size: 18px;
+}
+
+.monthDay span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.4;
+}
+
+.monthDay.working {
+  border-color: rgba(31, 122, 79, 0.45);
+  background: #e7f4ed;
+}
+
+.monthDay.timeOff {
+  border-color: rgba(183, 77, 101, 0.45);
+  background: #fae7ec;
+}
+
+.monthDay.mixed {
+  border-color: rgba(147, 96, 0, 0.35);
+  background: #fff4db;
+}
+
+.monthDay.selected {
+  outline: 3px solid rgba(23, 126, 137, 0.24);
+}
+
+.monthDay:disabled {
+  cursor: default;
+  opacity: 0;
+}
+
+.monthDay.blank {
+  min-height: 112px;
+}
+
+.allStaffDay {
+  min-height: 142px;
+}
+
+.daySummary {
+  color: var(--text) !important;
+}
+
+.staffPills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.staffPill {
+  max-width: 100%;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: #fff;
+  padding: 3px 7px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.workingPill {
+  color: var(--green) !important;
+}
+
+.timeOffPill {
+  border-color: rgba(183, 77, 101, 0.32);
+  background: #fff7f9;
+  color: var(--rose) !important;
+}
+
+.morePill {
+  color: var(--muted) !important;
+}
+
+.allStaffDetail {
+  display: grid;
+  gap: 10px;
+}
+
+.staffDayRow {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 10px;
+  align-items: start;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-soft);
+  padding: 10px;
+}
+
+.staffDayRow p {
+  margin: 3px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.staffDayRow.working {
+  border-color: rgba(31, 122, 79, 0.28);
+  background: #f4fbf7;
+}
+
+.staffDayRow.time_off {
+  border-color: rgba(183, 77, 101, 0.28);
+  background: #fff7f9;
+}
+
+.emptyState.compact {
+  padding: 10px;
+  font-size: 13px;
+}
+
+.scheduleRow {
+  display: grid;
+  grid-template-columns: 120px 1fr 1fr;
+  gap: 10px;
+  align-items: center;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-soft);
+  padding: 10px;
+}
+
+.checkLabel {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text);
+}
+
+.checkLabel input {
+  width: auto;
+}
+
+.spaceTop {
+  margin-top: 14px;
+}
+
+.dangerButton.compact {
+  min-height: 38px;
+  padding: 0 14px;
+}
+
+.primaryButton.compact,
+.ghostButton {
+  min-height: 38px;
+  padding: 0 14px;
+}
+
+.ghostButton {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--accent-dark);
+  font: inherit;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.modalBackdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: grid;
+  place-items: center;
+  background: rgba(15, 23, 42, 0.42);
+  padding: 20px;
+}
+
+.adminModal {
+  width: min(520px, 100%);
+  max-height: min(720px, calc(100vh - 40px));
+  overflow: auto;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 18px 60px rgba(15, 23, 42, 0.22);
+  padding: 20px;
+}
+
+.modalHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.modalHeader h2 {
+  margin: 0;
+  font-size: 22px;
+}
+
+.modalDescription {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-soft);
+  color: var(--muted);
+  margin: 0 0 14px;
+  padding: 10px 12px;
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.5;
+}
+
+.modalActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.modalActions .primaryButton,
+.modalActions .dangerButton,
+.modalActions .ghostButton {
+  min-width: 110px;
+}
+
+.iconButton {
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--muted);
+  font: inherit;
+  font-size: 18px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.iconButton:disabled,
+.ghostButton:disabled,
+.dangerButton:disabled {
+  cursor: wait;
+  opacity: 0.62;
+}
+
+.settingsGrid {
+  display: grid;
+  grid-template-columns: 420px minmax(0, 1fr);
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.checkboxGrid {
+  display: grid;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.formLabel {
+  margin-bottom: 8px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.purchaseBlock {
+  border-top: 1px solid var(--line);
+  margin-top: 10px;
+  padding-top: 10px;
+}
+
+.purchaseBlock strong {
+  display: block;
+  margin-bottom: 4px;
+}
+
+.memberActions {
+  display: grid;
+  justify-items: end;
+  gap: 8px;
+}
+
+@media (max-width: 840px) {
+  .toolGrid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .bookingGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .adminGrid,
+  .calendarLayout,
+  .scheduleLayout,
+  .monthlyControls,
+  .monthlyScheduleLayout,
+  .settingsGrid,
+  .metricGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .requestPanel {
+    position: static;
+  }
+
+  .pendingSidebar {
+    position: static;
+    max-height: none;
+  }
+}
+
+@media (max-width: 560px) {
+  .shell {
+    width: min(100% - 24px, 1120px);
+    padding: 20px 0;
+  }
+
+  .hero,
+  .panel,
+  .section {
+    padding: 20px;
+  }
+
+  .toolGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .bookingShell {
+    width: min(100% - 24px, 1440px);
+    padding: 18px 0;
+  }
+
+  .bookingHeader,
+  .adminHeader,
+  .fieldGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .bookingHeader,
+  .adminHeader,
+  .headerActions,
+  .memberActions,
+  .memberCard {
+    display: grid;
+  }
+
+  .memberActions {
+    justify-items: start;
+  }
+
+  .buttonRow,
+  .buttonRow.three {
+    grid-template-columns: 1fr;
+  }
+
+  .scheduleRow {
+    grid-template-columns: 1fr;
+  }
+
+  .timePair {
+    grid-template-columns: 1fr;
+  }
+
+  .monthCalendar {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .weekdayHeader {
+    display: none;
+  }
+}

@@ -1,0 +1,195 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum AppointmentStatus {
+  pending
+  confirmed
+  completed
+  cancelled
+  rejected
+  no_show
+}
+
+enum AdminRole {
+  admin
+  staff
+}
+
+model Member {
+  id           String        @id @default(cuid())
+  name         String
+  phone        String        @unique
+  email        String?
+  birthday     DateTime?
+  lineUserId   String?       @unique
+  note         String?
+  allergyNote  String?
+  internalNote String?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  appointments Appointment[]
+  purchases    PurchaseRecord[]
+}
+
+model Staff {
+  id              String          @id @default(cuid())
+  name            String
+  phone           String?
+  email           String?
+  active          Boolean         @default(true)
+  color           String          @default("#177e89")
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  appointments    Appointment[]
+  schedules       StaffSchedule[]
+  daySchedules    StaffDaySchedule[]
+  services        StaffService[]
+  timeOff         StaffTimeOff[]
+  adminUsers      AdminUser[]
+}
+
+enum DayScheduleStatus {
+  working
+  time_off
+}
+
+model Service {
+  id              String          @id @default(cuid())
+  name            String
+  category        String
+  description     String?
+  price           Int
+  durationMinutes Int
+  bufferMinutes   Int             @default(15)
+  active          Boolean         @default(true)
+  color           String          @default("#177e89")
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  appointments    Appointment[]
+  staff           StaffService[]
+}
+
+model StaffService {
+  staffId   String
+  serviceId String
+  staff     Staff   @relation(fields: [staffId], references: [id], onDelete: Cascade)
+  service   Service @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+
+  @@id([staffId, serviceId])
+}
+
+model StaffSchedule {
+  id          String @id @default(cuid())
+  staffId     String
+  dayOfWeek   Int
+  startMinute Int
+  endMinute   Int
+  staff       Staff  @relation(fields: [staffId], references: [id], onDelete: Cascade)
+
+  @@index([staffId, dayOfWeek])
+}
+
+model StaffTimeOff {
+  id        String   @id @default(cuid())
+  staffId   String
+  startAt   DateTime
+  endAt     DateTime
+  reason    String?
+  createdAt DateTime @default(now())
+  staff     Staff    @relation(fields: [staffId], references: [id], onDelete: Cascade)
+
+  @@index([staffId, startAt, endAt])
+}
+
+model StaffDaySchedule {
+  id          String            @id @default(cuid())
+  staffId     String
+  date        DateTime
+  status      DayScheduleStatus
+  startMinute Int?
+  endMinute   Int?
+  note        String?
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+  staff       Staff             @relation(fields: [staffId], references: [id], onDelete: Cascade)
+
+  @@unique([staffId, date])
+  @@index([staffId, date, status])
+}
+
+model Appointment {
+  id              String            @id @default(cuid())
+  memberId        String
+  staffId         String
+  serviceId       String
+  startAt         DateTime
+  endAt           DateTime
+  status          AppointmentStatus @default(pending)
+  customerNote    String?
+  internalNote    String?
+  confirmedAt     DateTime?
+  rejectedAt      DateTime?
+  rejectionReason String?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  member          Member            @relation(fields: [memberId], references: [id])
+  staff           Staff             @relation(fields: [staffId], references: [id])
+  service         Service           @relation(fields: [serviceId], references: [id])
+  notificationLogs NotificationLog[]
+
+  @@index([staffId, startAt, endAt, status])
+  @@index([memberId, createdAt])
+}
+
+model NotificationLog {
+  id            String      @id @default(cuid())
+  appointmentId String?
+  channel       String
+  status        String
+  message       String
+  createdAt     DateTime    @default(now())
+  appointment   Appointment? @relation(fields: [appointmentId], references: [id], onDelete: SetNull)
+}
+
+model PurchaseRecord {
+  id          String   @id @default(cuid())
+  memberId    String
+  itemName    String
+  amount      Int
+  purchasedAt DateTime @default(now())
+  note        String?
+  createdAt   DateTime @default(now())
+  member      Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  @@index([memberId, purchasedAt])
+}
+
+model AdminUser {
+  id           String    @id @default(cuid())
+  email        String    @unique
+  name         String
+  passwordHash String
+  role         AdminRole @default(staff)
+  staffId      String?
+  active       Boolean   @default(true)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  staff        Staff?    @relation(fields: [staffId], references: [id], onDelete: SetNull)
+}
+
+model BusinessSetting {
+  id                 String   @id @default("default")
+  shopName           String   @default("美容預約中心")
+  earliestBookingDay Int      @default(0)
+  latestBookingDay   Int      @default(30)
+  closedDates        String[] @default([])
+  cancellationPolicy String   @default("如需取消或改期，請提前與店家聯繫。")
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+}
