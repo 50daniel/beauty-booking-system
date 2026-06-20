@@ -1,34 +1,51 @@
-import { createHash } from "crypto";
+import { randomBytes, scryptSync } from "crypto";
 import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
+const text = {
+  lin: "\u6797\u8001\u5e2b",
+  chen: "\u9673\u8001\u5e2b",
+  wu: "\u5433\u8001\u5e2b",
+  facialName: "\u6df1\u5c64\u4fdd\u6fd5\u81c9\u90e8\u8b77\u7406",
+  facialCategory: "\u81c9\u90e8\u8b77\u7406",
+  lashName: "\u81ea\u7136\u6b3e\u7f8e\u776b\u8a2d\u8a08",
+  lashCategory: "\u7f8e\u776b",
+  bodyName: "\u80a9\u9838\u653e\u9b06\u8b77\u7406",
+  bodyCategory: "\u8eab\u9ad4\u8b77\u7406",
+  shopName: "\u7f8e\u9e97\u9810\u7d04\u5de5\u4f5c\u5ba4",
+  cancellationPolicy: "\u5982\u9700\u53d6\u6d88\u6216\u6539\u671f\uff0c\u8acb\u63d0\u524d\u8207\u5e97\u5bb6\u806f\u7e6b\u3002",
+  adminName: "\u7cfb\u7d71\u7ba1\u7406\u54e1",
+};
+
 function hashPassword(password: string) {
-  return createHash("sha256").update(`beauty-booking:${password}`).digest("hex");
+  const salt = randomBytes(16).toString("hex");
+  const hash = scryptSync(`beauty-booking:${password}`, salt, 64).toString("hex");
+  return `scrypt$${salt}$${hash}`;
 }
 
 async function main() {
   const lin = await prisma.staff.upsert({
     where: { id: "staff-lin" },
-    update: { name: "林老師", phone: "0912-111-222", active: true, color: "#177e89" },
-    create: { id: "staff-lin", name: "林老師", phone: "0912-111-222", color: "#177e89" },
+    update: { name: text.lin, phone: "0912-111-222", active: true, color: "#177e89" },
+    create: { id: "staff-lin", name: text.lin, phone: "0912-111-222", color: "#177e89" },
   });
   const chen = await prisma.staff.upsert({
     where: { id: "staff-chen" },
-    update: { name: "陳老師", phone: "0912-333-444", active: true, color: "#b74d65" },
-    create: { id: "staff-chen", name: "陳老師", phone: "0912-333-444", color: "#b74d65" },
+    update: { name: text.chen, phone: "0912-333-444", active: true, color: "#b74d65" },
+    create: { id: "staff-chen", name: text.chen, phone: "0912-333-444", color: "#b74d65" },
   });
   const wu = await prisma.staff.upsert({
     where: { id: "staff-wu" },
-    update: { name: "吳老師", phone: "0912-555-666", active: true, color: "#1f7a4f" },
-    create: { id: "staff-wu", name: "吳老師", phone: "0912-555-666", color: "#1f7a4f" },
+    update: { name: text.wu, phone: "0912-555-666", active: true, color: "#1f7a4f" },
+    create: { id: "staff-wu", name: text.wu, phone: "0912-555-666", color: "#1f7a4f" },
   });
 
   const facial = await prisma.service.upsert({
     where: { id: "svc-facial" },
     update: {
-      name: "深層保濕臉部護理",
-      category: "臉部護理",
+      name: text.facialName,
+      category: text.facialCategory,
       price: 1800,
       durationMinutes: 90,
       bufferMinutes: 15,
@@ -37,8 +54,8 @@ async function main() {
     },
     create: {
       id: "svc-facial",
-      name: "深層保濕臉部護理",
-      category: "臉部護理",
+      name: text.facialName,
+      category: text.facialCategory,
       price: 1800,
       durationMinutes: 90,
       bufferMinutes: 15,
@@ -48,8 +65,8 @@ async function main() {
   const lash = await prisma.service.upsert({
     where: { id: "svc-lash" },
     update: {
-      name: "自然款美睫設計",
-      category: "美睫",
+      name: text.lashName,
+      category: text.lashCategory,
       price: 1600,
       durationMinutes: 120,
       bufferMinutes: 15,
@@ -58,8 +75,8 @@ async function main() {
     },
     create: {
       id: "svc-lash",
-      name: "自然款美睫設計",
-      category: "美睫",
+      name: text.lashName,
+      category: text.lashCategory,
       price: 1600,
       durationMinutes: 120,
       bufferMinutes: 15,
@@ -69,8 +86,8 @@ async function main() {
   const body = await prisma.service.upsert({
     where: { id: "svc-body" },
     update: {
-      name: "肩頸放鬆護理",
-      category: "身體護理",
+      name: text.bodyName,
+      category: text.bodyCategory,
       price: 2200,
       durationMinutes: 100,
       bufferMinutes: 20,
@@ -79,8 +96,8 @@ async function main() {
     },
     create: {
       id: "svc-body",
-      name: "肩頸放鬆護理",
-      category: "身體護理",
+      name: text.bodyName,
+      category: text.bodyCategory,
       price: 2200,
       durationMinutes: 100,
       bufferMinutes: 20,
@@ -125,40 +142,42 @@ async function main() {
   await prisma.businessSetting.upsert({
     where: { id: "default" },
     update: {
-      shopName: "美麗預約工作室",
-      cancellationPolicy: "如需取消或改期，請提前與店家聯繫。",
+      shopName: text.shopName,
+      cancellationPolicy: text.cancellationPolicy,
     },
     create: {
       id: "default",
-      shopName: "美麗預約工作室",
-      cancellationPolicy: "如需取消或改期，請提前與店家聯繫。",
+      shopName: text.shopName,
+      cancellationPolicy: text.cancellationPolicy,
     },
   });
 
   await prisma.adminUser.upsert({
     where: { email: "admin@example.com" },
     update: {
-      name: "系統管理員",
+      name: text.adminName,
+      passwordHash: hashPassword("admin1234"),
       active: true,
       role: "admin",
     },
     create: {
       email: "admin@example.com",
-      name: "系統管理員",
+      name: text.adminName,
       passwordHash: hashPassword("admin1234"),
       role: "admin",
     },
   });
 
   for (const user of [
-    { email: "lin@example.com", name: "林老師", staffId: lin.id },
-    { email: "chen@example.com", name: "陳老師", staffId: chen.id },
-    { email: "wu@example.com", name: "吳老師", staffId: wu.id },
+    { email: "lin@example.com", name: text.lin, staffId: lin.id },
+    { email: "chen@example.com", name: text.chen, staffId: chen.id },
+    { email: "wu@example.com", name: text.wu, staffId: wu.id },
   ]) {
     await prisma.adminUser.upsert({
       where: { email: user.email },
       update: {
         name: user.name,
+        passwordHash: hashPassword("staff1234"),
         staffId: user.staffId,
         role: "staff",
         active: true,

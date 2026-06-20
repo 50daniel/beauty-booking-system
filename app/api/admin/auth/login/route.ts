@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { createAdminSession, hashPassword } from "@/lib/auth";
+import { createAdminSession, verifyPassword } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 
 const loginSchema = z.object({
   email: z.string().email(),
@@ -9,9 +10,18 @@ const loginSchema = z.object({
 });
 
 export async function POST(request: NextRequest) {
+  const ip = getClientIp(request);
+  const limit = checkRateLimit(`admin-login:${ip}`, 10, 10 * 60 * 1000);
+  if (!limit.allowed) {
+    return NextResponse.json(
+      { error: "Too many login attempts. Please try again later." },
+      { status: 429, headers: { "Retry-After": String(limit.retryAfterSeconds) } },
+    );
+  }
+
   const parsed = loginSchema.safeParse(await request.json());
   if (!parsed.success) {
-    return NextResponse.json({ error: "請輸入正確的 Email 與密碼" }, { status: 400 });
+    return NextResponse.json({ error: "Invalid email or password." }, { status: 400 });
   }
 
   const user = await prisma.adminUser.findFirst({
@@ -22,8 +32,8 @@ export async function POST(request: NextRequest) {
     include: { staff: true },
   });
 
-  if (!user || user.passwordHash !== hashPassword(parsed.data.password)) {
-    return NextResponse.json({ error: "帳號或密碼不正確" }, { status: 401 });
+  if (!user || !verifyPassword(parsed.data.password, user.passwordHash)) {
+    return NextResponse.json({ error: "Invalid email or password." }, { status: 401 });
   }
 
   await createAdminSession(user.id);

@@ -1,4 +1,4 @@
-import { createHmac, createHash, timingSafeEqual } from "crypto";
+import { createHmac, createHash, randomBytes, scryptSync, timingSafeEqual } from "crypto";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
@@ -10,7 +10,29 @@ function getSecret() {
 }
 
 export function hashPassword(password: string) {
+  const salt = randomBytes(16).toString("hex");
+  const hash = scryptSync(`beauty-booking:${password}`, salt, 64).toString("hex");
+  return `scrypt$${salt}$${hash}`;
+}
+
+function legacyHashPassword(password: string) {
   return createHash("sha256").update(`beauty-booking:${password}`).digest("hex");
+}
+
+function timingSafeStringEqual(a: string, b: string) {
+  const left = Buffer.from(a);
+  const right = Buffer.from(b);
+  return left.length === right.length && timingSafeEqual(left, right);
+}
+
+export function verifyPassword(password: string, storedHash: string) {
+  const [scheme, salt, hash] = storedHash.split("$");
+  if (scheme === "scrypt" && salt && hash) {
+    const candidate = scryptSync(`beauty-booking:${password}`, salt, 64).toString("hex");
+    return timingSafeStringEqual(candidate, hash);
+  }
+
+  return timingSafeStringEqual(legacyHashPassword(password), storedHash);
 }
 
 function sign(value: string) {
