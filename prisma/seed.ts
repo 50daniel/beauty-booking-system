@@ -10,27 +10,35 @@ function hashPassword(password: string) {
 async function main() {
   const lin = await prisma.staff.upsert({
     where: { id: "staff-lin" },
-    update: {},
-    create: { id: "staff-lin", name: "林佳瑜", phone: "0912-111-222", color: "#177e89" },
+    update: { name: "林老師", phone: "0912-111-222", active: true, color: "#177e89" },
+    create: { id: "staff-lin", name: "林老師", phone: "0912-111-222", color: "#177e89" },
   });
   const chen = await prisma.staff.upsert({
     where: { id: "staff-chen" },
-    update: {},
-    create: { id: "staff-chen", name: "陳品妍", phone: "0912-333-444", color: "#b74d65" },
+    update: { name: "陳老師", phone: "0912-333-444", active: true, color: "#b74d65" },
+    create: { id: "staff-chen", name: "陳老師", phone: "0912-333-444", color: "#b74d65" },
   });
   const wu = await prisma.staff.upsert({
     where: { id: "staff-wu" },
-    update: {},
-    create: { id: "staff-wu", name: "吳柔安", phone: "0912-555-666", color: "#1f7a4f" },
+    update: { name: "吳老師", phone: "0912-555-666", active: true, color: "#1f7a4f" },
+    create: { id: "staff-wu", name: "吳老師", phone: "0912-555-666", color: "#1f7a4f" },
   });
 
   const facial = await prisma.service.upsert({
     where: { id: "svc-facial" },
-    update: {},
+    update: {
+      name: "深層保濕臉部護理",
+      category: "臉部護理",
+      price: 1800,
+      durationMinutes: 90,
+      bufferMinutes: 15,
+      active: true,
+      color: "#177e89",
+    },
     create: {
       id: "svc-facial",
       name: "深層保濕臉部護理",
-      category: "臉部保養",
+      category: "臉部護理",
       price: 1800,
       durationMinutes: 90,
       bufferMinutes: 15,
@@ -39,10 +47,18 @@ async function main() {
   });
   const lash = await prisma.service.upsert({
     where: { id: "svc-lash" },
-    update: {},
+    update: {
+      name: "自然款美睫設計",
+      category: "美睫",
+      price: 1600,
+      durationMinutes: 120,
+      bufferMinutes: 15,
+      active: true,
+      color: "#b74d65",
+    },
     create: {
       id: "svc-lash",
-      name: "日系自然美睫",
+      name: "自然款美睫設計",
       category: "美睫",
       price: 1600,
       durationMinutes: 120,
@@ -52,11 +68,19 @@ async function main() {
   });
   const body = await prisma.service.upsert({
     where: { id: "svc-body" },
-    update: {},
+    update: {
+      name: "肩頸放鬆護理",
+      category: "身體護理",
+      price: 2200,
+      durationMinutes: 100,
+      bufferMinutes: 20,
+      active: true,
+      color: "#1f7a4f",
+    },
     create: {
       id: "svc-body",
-      name: "肩頸舒壓芳療",
-      category: "身體課程",
+      name: "肩頸放鬆護理",
+      category: "身體護理",
       price: 2200,
       durationMinutes: 100,
       bufferMinutes: 20,
@@ -100,13 +124,24 @@ async function main() {
 
   await prisma.businessSetting.upsert({
     where: { id: "default" },
-    update: {},
-    create: { id: "default", shopName: "美容預約中心" },
+    update: {
+      shopName: "美麗預約工作室",
+      cancellationPolicy: "如需取消或改期，請提前與店家聯繫。",
+    },
+    create: {
+      id: "default",
+      shopName: "美麗預約工作室",
+      cancellationPolicy: "如需取消或改期，請提前與店家聯繫。",
+    },
   });
 
   await prisma.adminUser.upsert({
     where: { email: "admin@example.com" },
-    update: {},
+    update: {
+      name: "系統管理員",
+      active: true,
+      role: "admin",
+    },
     create: {
       email: "admin@example.com",
       name: "系統管理員",
@@ -116,13 +151,14 @@ async function main() {
   });
 
   for (const user of [
-    { email: "lin@example.com", name: "林佳瑜", staffId: lin.id },
-    { email: "chen@example.com", name: "陳品妍", staffId: chen.id },
-    { email: "wu@example.com", name: "吳柔安", staffId: wu.id },
+    { email: "lin@example.com", name: "林老師", staffId: lin.id },
+    { email: "chen@example.com", name: "陳老師", staffId: chen.id },
+    { email: "wu@example.com", name: "吳老師", staffId: wu.id },
   ]) {
     await prisma.adminUser.upsert({
       where: { email: user.email },
       update: {
+        name: user.name,
         staffId: user.staffId,
         role: "staff",
         active: true,
