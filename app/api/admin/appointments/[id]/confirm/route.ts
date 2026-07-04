@@ -14,37 +14,34 @@ export async function POST(_request: NextRequest, context: RouteContext) {
   const { id } = await context.params;
 
   try {
-    const appointment = await prisma.$transaction(async (tx) => {
-      const pending = await tx.appointment.findUnique({
-        where: { id },
-        include: { member: true, service: true, staff: true },
-      });
+    const pending = await prisma.appointment.findUnique({
+      where: { id },
+      include: { member: true, service: true, staff: true },
+    });
 
-      if (!pending) throw new Error("找不到預約申請");
-      if (pending.status !== "pending") throw new Error("只有待確認申請可以確認");
+    if (!pending) throw new Error("找不到預約申請");
+    if (pending.status !== "pending") throw new Error("只有待確認申請可以確認");
 
-      await assertCanConfirmAppointment(tx, pending);
+    await assertCanConfirmAppointment(prisma, pending);
 
-      const confirmed = await tx.appointment.update({
-        where: { id },
+    const [appointment] = await prisma.$transaction([
+      prisma.appointment.update({
+        where: { id, status: "pending" },
         data: {
           status: "confirmed",
           confirmedAt: new Date(),
         },
         include: { member: true, service: true, staff: true },
-      });
-
-      await tx.notificationLog.create({
+      }),
+      prisma.notificationLog.create({
         data: {
           appointmentId: id,
           channel: "manual",
           status: "queued",
           message: "預約已確認，等待通知客戶。",
         },
-      });
-
-      return confirmed;
-    });
+      }),
+    ]);
 
     return NextResponse.json({
       appointment: {

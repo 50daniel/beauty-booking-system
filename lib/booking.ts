@@ -93,7 +93,7 @@ export async function getAvailableSlots(input: {
 }
 
 export async function assertCanConfirmAppointment(
-  tx: Prisma.TransactionClient,
+  tx: Prisma.TransactionClient | typeof prisma,
   appointment: {
     id: string;
     staffId: string;
