@@ -323,6 +323,16 @@ textarea {
   line-height: 1.5;
 }
 
+.paymentOptions {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.paymentOptions input {
+  width: auto;
+}
+
 .primaryButton {
   min-height: 48px;
   border: 0;

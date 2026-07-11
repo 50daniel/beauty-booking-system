@@ -26,10 +26,27 @@ type Slot = {
   label: string;
 };
 
+type CourseBalance = {
+  id: string;
+  serviceId: string;
+  serviceName: string;
+  availableSessions: number;
+  expiresAt: Date | string | null;
+};
+
 type BookingFlowProps = {
+  initialMember: {
+    id: string;
+    name: string;
+    phone: string;
+  };
   initialServices: Service[];
+  courseBalances: CourseBalance[];
+  walletBalance: number;
   today: string;
 };
+
+type PaymentMethod = "course" | "wallet";
 
 type SubmitState =
   | { status: "idle"; message: string }
@@ -37,9 +54,16 @@ type SubmitState =
   | { status: "success"; message: string; appointmentId: string }
   | { status: "error"; message: string };
 
-export function BookingFlow({ initialServices, today }: BookingFlowProps) {
+export function BookingFlow({
+  initialMember,
+  initialServices,
+  courseBalances,
+  walletBalance,
+  today,
+}: BookingFlowProps) {
   const resultRef = useRef<HTMLDivElement>(null);
   const [serviceId, setServiceId] = useState(initialServices[0]?.id ?? "");
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("course");
   const [staff, setStaff] = useState<Staff[]>([]);
   const [staffId, setStaffId] = useState("");
   const [date, setDate] = useState(today);
@@ -54,6 +78,12 @@ export function BookingFlow({ initialServices, today }: BookingFlowProps) {
     [initialServices, serviceId],
   );
   const selectedStaff = useMemo(() => staff.find((item) => item.id === staffId), [staff, staffId]);
+  const selectedBalance = useMemo(
+    () => courseBalances.find((balance) => balance.serviceId === serviceId),
+    [courseBalances, serviceId],
+  );
+  const canUseCourse = Boolean(selectedBalance && selectedBalance.availableSessions > 0);
+  const canUseWallet = Boolean(selectedService && walletBalance >= selectedService.price);
 
   useEffect(() => {
     if (!serviceId) return;
@@ -83,69 +113,59 @@ export function BookingFlow({ initialServices, today }: BookingFlowProps) {
       .finally(() => setLoadingSlots(false));
   }, [serviceId, staffId, date]);
 
+  useEffect(() => {
+    if (paymentMethod === "course" && !canUseCourse && canUseWallet) {
+      setPaymentMethod("wallet");
+    }
+  }, [canUseCourse, canUseWallet, paymentMethod]);
+
+  async function logout() {
+    await fetch("/api/member/auth/logout", { method: "POST" });
+    window.location.href = "/member/login";
+  }
+
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const form = event.currentTarget;
     if (!selectedSlot || !selectedService || !selectedStaff) {
-      setSubmitState({ status: "error", message: "請先選擇服務、美容師與預約時段。" });
+      setSubmitState({ status: "error", message: "請先選擇療程、老師與預約時間。" });
+      return;
+    }
+    if (paymentMethod === "course" && !canUseCourse) {
+      setSubmitState({ status: "error", message: "這個療程沒有可使用的剩餘堂數。" });
+      return;
+    }
+    if (paymentMethod === "wallet" && !canUseWallet) {
+      setSubmitState({ status: "error", message: "儲值金不足，無法使用儲值金預約這個療程。" });
       return;
     }
 
-    const formData = new FormData(form);
-    const member = {
-      name: getFormValue(formData, "name"),
-      phone: getFormValue(formData, "phone"),
-      email: getFormValue(formData, "email"),
-      birthday: getFormValue(formData, "birthday"),
-      allergyNote: getFormValue(formData, "allergyNote"),
-      note: getFormValue(formData, "memberNote"),
-    };
-    setSubmitState({ status: "loading", message: "正在送出預約申請..." });
+    const formData = new FormData(event.currentTarget);
+    setSubmitState({ status: "loading", message: "正在送出預約..." });
 
-    const controller = new AbortController();
-    const timeoutId = window.setTimeout(() => controller.abort(), 20000);
-    let data: Awaited<ReturnType<typeof readJsonResponse>>;
+    const response = await fetch("/api/appointments/request", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        serviceId,
+        staffId,
+        date,
+        startMinute: selectedSlot.startMinute,
+        paymentMethod,
+        customerNote: getFormValue(formData, "customerNote"),
+      }),
+    });
+    const data = await readJsonResponse(response);
 
-    try {
-      const response = await fetch("/api/appointments/request", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        signal: controller.signal,
-        body: JSON.stringify({
-          serviceId,
-          staffId,
-          date,
-          startMinute: selectedSlot.startMinute,
-          member,
-          customerNote: getFormValue(formData, "customerNote"),
-        }),
-      });
-
-      data = await readJsonResponse(response);
-      if (!response.ok) {
-        setSubmitState({ status: "error", message: data?.error ?? "預約申請失敗，請稍後再試。" });
-        return;
-      }
-    } catch (error) {
-      setSubmitState({
-        status: "error",
-        message:
-          error instanceof DOMException && error.name === "AbortError"
-            ? "送出等待時間過長，請到後台確認是否已有建立資料，或稍後再試。"
-            : "預約申請送出時發生連線問題，請稍後再試。",
-      });
+    if (!response.ok) {
+      setSubmitState({ status: "error", message: data?.error ?? "預約送出失敗，請稍後再試。" });
       return;
-    } finally {
-      window.clearTimeout(timeoutId);
     }
 
-    form.reset();
+    event.currentTarget.reset();
     setSubmitState({
       status: "success",
-      appointmentId: data?.appointment?.id ?? "已建立",
-      message: `預約申請已送出：${data?.appointment?.serviceName ?? selectedService.name} / ${
-        data?.appointment?.staffName ?? selectedStaff.name
-      }。美容師確認後才會正式成立。`,
+      appointmentId: data?.appointment?.id ?? "",
+      message: `已送出 ${data?.appointment?.serviceName ?? selectedService.name} 預約，等待店家確認。`,
     });
     window.requestAnimationFrame(() => {
       resultRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -157,46 +177,57 @@ export function BookingFlow({ initialServices, today }: BookingFlowProps) {
       <header className="bookingHeader">
         <div>
           <p className="eyebrow">Online Reservation</p>
-          <h1>線上預約申請</h1>
-          <p>選擇服務、美容師與可預約時段。送出後會先進入待確認，美容師確認後才會正式排入日曆。</p>
+          <h1>會員預約</h1>
+          <p>
+            {initialMember.name}，請選擇療程、老師與時間。預約成立後會先保留堂數或儲值金，完成服務後才正式扣除。
+          </p>
         </div>
-        <Link className="textLink" href="/">
-          回首頁
-        </Link>
+        <div className="headerActions">
+          <button className="ghostButton" onClick={logout} type="button">
+            登出
+          </button>
+          <Link className="textLink" href="/">
+            回首頁
+          </Link>
+        </div>
       </header>
 
       <div className="bookingGrid">
         <section className="panel">
           <div className="sectionHeading">
             <p className="eyebrow">Step 1</p>
-            <h2>選擇服務</h2>
+            <h2>選擇療程</h2>
           </div>
           <div className="servicePicker">
-            {initialServices.map((service) => (
-              <button
-                className={`selectCard ${service.id === serviceId ? "isActive" : ""}`}
-                key={service.id}
-                onClick={() => setServiceId(service.id)}
-                type="button"
-              >
-                <span className="colorDot" style={{ background: service.color }} />
-                <strong>{service.name}</strong>
-                <span>
-                  {service.category} / {service.durationMinutes} 分鐘 / NT${service.price.toLocaleString("zh-TW")}
-                </span>
-              </button>
-            ))}
+            {initialServices.map((service) => {
+              const balance = courseBalances.find((item) => item.serviceId === service.id);
+              return (
+                <button
+                  className={`selectCard ${service.id === serviceId ? "isActive" : ""}`}
+                  key={service.id}
+                  onClick={() => setServiceId(service.id)}
+                  type="button"
+                >
+                  <span className="colorDot" style={{ background: service.color }} />
+                  <strong>{service.name}</strong>
+                  <span>
+                    {service.category} / {service.durationMinutes} 分鐘 / NT${service.price.toLocaleString("zh-TW")}
+                  </span>
+                  <span>剩餘堂數：{balance?.availableSessions ?? 0}</span>
+                </button>
+              );
+            })}
           </div>
         </section>
 
         <section className="panel">
           <div className="sectionHeading">
             <p className="eyebrow">Step 2</p>
-            <h2>選擇美容師與日期</h2>
+            <h2>選擇老師與時間</h2>
           </div>
           <div className="fieldGrid">
             <label>
-              美容師
+              老師
               <select disabled={loadingStaff || !staff.length} value={staffId} onChange={(event) => setStaffId(event.target.value)}>
                 {staff.map((item) => (
                   <option key={item.id} value={item.id}>
@@ -212,8 +243,8 @@ export function BookingFlow({ initialServices, today }: BookingFlowProps) {
           </div>
 
           <div className="slotPanel">
-            {loadingSlots ? <div className="emptyState">讀取可預約時段...</div> : null}
-            {!loadingSlots && slots.length === 0 ? <div className="emptyState">這天沒有可預約空檔</div> : null}
+            {loadingSlots ? <div className="emptyState">讀取可預約時間...</div> : null}
+            {!loadingSlots && slots.length === 0 ? <div className="emptyState">這一天目前沒有可預約時段。</div> : null}
             {!loadingSlots && slots.length > 0 ? (
               <div className="slotGrid">
                 {slots.map((slot) => (
@@ -234,7 +265,7 @@ export function BookingFlow({ initialServices, today }: BookingFlowProps) {
         <section className="panel requestPanel">
           <div className="sectionHeading">
             <p className="eyebrow">Step 3</p>
-            <h2>會員資料與備註</h2>
+            <h2>付款方式</h2>
           </div>
           <div className="selectedSummary">
             {selectedService && selectedStaff && selectedSlot ? (
@@ -245,52 +276,55 @@ export function BookingFlow({ initialServices, today }: BookingFlowProps) {
                 </span>
               </>
             ) : (
-              <span>尚未選擇完整預約資訊</span>
+              <span>請先選擇療程、老師與時間。</span>
             )}
+          </div>
+
+          <div className="paymentOptions">
+            <label className={`selectCard ${paymentMethod === "course" ? "isActive" : ""}`}>
+              <input
+                checked={paymentMethod === "course"}
+                disabled={!canUseCourse}
+                name="paymentMethod"
+                onChange={() => setPaymentMethod("course")}
+                type="radio"
+              />
+              <strong>使用已購療程</strong>
+              <span>此療程剩餘 {selectedBalance?.availableSessions ?? 0} 堂</span>
+            </label>
+            <label className={`selectCard ${paymentMethod === "wallet" ? "isActive" : ""}`}>
+              <input
+                checked={paymentMethod === "wallet"}
+                disabled={!canUseWallet}
+                name="paymentMethod"
+                onChange={() => setPaymentMethod("wallet")}
+                type="radio"
+              />
+              <strong>使用儲值金</strong>
+              <span>
+                餘額 NT${walletBalance.toLocaleString("zh-TW")}
+                {selectedService ? ` / 本次 NT${selectedService.price.toLocaleString("zh-TW")}` : ""}
+              </span>
+            </label>
           </div>
 
           <div ref={resultRef}>
             {submitState.message ? (
               <div className={`formMessage ${submitState.status}`} role={submitState.status === "error" ? "alert" : "status"}>
-                <strong>{submitState.status === "success" ? "預約申請送出成功" : submitState.status === "error" ? "預約申請未送出" : "處理中"}</strong>
+                <strong>{submitState.status === "success" ? "預約已送出" : submitState.status === "error" ? "無法預約" : "處理中"}</strong>
                 <span>{submitState.message}</span>
-                {submitState.status === "success" ? <small>申請編號：{submitState.appointmentId}</small> : null}
+                {submitState.status === "success" ? <small>預約編號：{submitState.appointmentId}</small> : null}
               </div>
             ) : null}
           </div>
 
           <form className="bookingForm" onSubmit={handleSubmit}>
             <label>
-              姓名 <span className="requiredMark" aria-label="必填">*</span>
-              <input name="name" required type="text" />
+              備註
+              <textarea name="customerNote" rows={4} />
             </label>
-            <label>
-              手機 <span className="requiredMark" aria-label="必填">*</span>
-              <input name="phone" required type="tel" />
-            </label>
-            <label>
-              Email
-              <input name="email" type="email" />
-            </label>
-            <label>
-              生日
-              <input name="birthday" type="date" />
-            </label>
-            <label>
-              過敏 / 禁忌
-              <textarea name="allergyNote" rows={3} />
-            </label>
-            <label>
-              會員備註
-              <textarea name="memberNote" rows={3} />
-            </label>
-            <label>
-              本次預約備註
-              <textarea name="customerNote" rows={3} />
-            </label>
-            <p className="formHint">標示 * 的欄位為必填，其餘可留空。</p>
             <button className="primaryButton" disabled={submitState.status === "loading"} type="submit">
-              送出預約申請
+              送出預約
             </button>
           </form>
         </section>

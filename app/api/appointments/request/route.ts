@@ -4,6 +4,8 @@ import { getAvailableSlots } from "@/lib/booking";
 import { addMinutes, makeDateTime } from "@/lib/time";
 import { prisma } from "@/lib/prisma";
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
+import { requireMember } from "@/lib/member-auth";
+import { reserveAppointmentPayment } from "@/lib/member-billing";
 
 const optionalText = z.preprocess((value) => {
   if (typeof value !== "string") return value;
@@ -16,28 +18,9 @@ const requestSchema = z.object({
   staffId: z.string().min(1),
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   startMinute: z.number().int().min(0).max(24 * 60),
-  member: z.object({
-    name: z.string().trim().min(1, "Name is required."),
-    phone: z.string().trim().min(6, "Phone is required."),
-    email: z.preprocess((value) => {
-      if (typeof value !== "string") return value;
-      const trimmed = value.trim();
-      return trimmed === "" ? undefined : trimmed;
-    }, z.string().email("Invalid email.").optional()),
-    birthday: z.preprocess((value) => {
-      if (typeof value !== "string") return value;
-      const trimmed = value.trim();
-      return trimmed === "" ? undefined : trimmed;
-    }, z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Invalid birthday.").optional()),
-    allergyNote: optionalText,
-    note: optionalText,
-  }),
+  paymentMethod: z.enum(["course", "wallet"]),
   customerNote: optionalText,
 });
-
-function normalizePhone(phone: string) {
-  return phone.replace(/\D/g, "");
-}
 
 function isSlotConflict(error: unknown) {
   return (
@@ -47,6 +30,13 @@ function isSlotConflict(error: unknown) {
 }
 
 export async function POST(request: NextRequest) {
+  let member;
+  try {
+    member = await requireMember();
+  } catch {
+    return NextResponse.json({ error: "請先登入會員再預約。" }, { status: 401 });
+  }
+
   const ip = getClientIp(request);
   const limit = checkRateLimit(`appointment-request:${ip}`, 8, 10 * 60 * 1000);
   if (!limit.allowed) {
@@ -89,7 +79,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Selected time slot is no longer available." }, { status: 409 });
   }
 
-  const phone = normalizePhone(input.member.phone);
   const startAt = makeDateTime(input.date, input.startMinute);
   const endAt = addMinutes(startAt, service.durationMinutes);
 
@@ -109,25 +98,6 @@ export async function POST(request: NextRequest) {
         throw new Error("BOOKING_SLOT_CONFLICT");
       }
 
-      const member = await tx.member.upsert({
-        where: { phone },
-        update: {
-          name: input.member.name.trim(),
-          email: input.member.email || null,
-          birthday: input.member.birthday ? new Date(`${input.member.birthday}T00:00:00+08:00`) : undefined,
-          allergyNote: input.member.allergyNote || null,
-          note: input.member.note || undefined,
-        },
-        create: {
-          name: input.member.name.trim(),
-          phone,
-          email: input.member.email || null,
-          birthday: input.member.birthday ? new Date(`${input.member.birthday}T00:00:00+08:00`) : null,
-          allergyNote: input.member.allergyNote || null,
-          note: input.member.note || null,
-        },
-      });
-
       const created = await tx.appointment.create({
         data: {
           memberId: member.id,
@@ -143,6 +113,14 @@ export async function POST(request: NextRequest) {
           staff: true,
           service: true,
         },
+      });
+
+      await reserveAppointmentPayment(tx, {
+        appointmentId: created.id,
+        memberId: member.id,
+        serviceId: service.id,
+        method: input.paymentMethod,
+        price: service.price,
       });
 
       await tx.notificationLog.create({
@@ -174,6 +152,12 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     if (isSlotConflict(error)) {
       return NextResponse.json({ error: "Selected time slot is no longer available." }, { status: 409 });
+    }
+    if (error instanceof Error && error.message === "COURSE_BALANCE_NOT_ENOUGH") {
+      return NextResponse.json({ error: "這個療程沒有可使用的剩餘堂數。" }, { status: 409 });
+    }
+    if (error instanceof Error && error.message === "WALLET_BALANCE_NOT_ENOUGH") {
+      return NextResponse.json({ error: "儲值金不足，無法預約這個療程。" }, { status: 409 });
     }
 
     throw error;
