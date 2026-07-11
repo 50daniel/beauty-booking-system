@@ -142,19 +142,38 @@ export function BookingFlow({
     const formData = new FormData(event.currentTarget);
     setSubmitState({ status: "loading", message: "正在送出預約..." });
 
-    const response = await fetch("/api/appointments/request", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        serviceId,
-        staffId,
-        date,
-        startMinute: selectedSlot.startMinute,
-        paymentMethod,
-        customerNote: getFormValue(formData, "customerNote"),
-      }),
-    });
-    const data = await readJsonResponse(response);
+    const controller = new AbortController();
+    const timeoutId = window.setTimeout(() => controller.abort(), 25000);
+    let response: Response;
+    let data: Awaited<ReturnType<typeof readJsonResponse>>;
+
+    try {
+      response = await fetch("/api/appointments/request", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        signal: controller.signal,
+        body: JSON.stringify({
+          serviceId,
+          staffId,
+          date,
+          startMinute: selectedSlot.startMinute,
+          paymentMethod,
+          customerNote: getFormValue(formData, "customerNote"),
+        }),
+      });
+      data = await readJsonResponse(response);
+    } catch (error) {
+      setSubmitState({
+        status: "error",
+        message:
+          error instanceof DOMException && error.name === "AbortError"
+            ? "預約送出時間較久，後台可能已收到預約。請先不要重複送出，請刷新頁面或聯絡店家確認。"
+            : "預約送出時連線中斷，後台可能已收到預約。請先不要重複送出，請刷新頁面或聯絡店家確認。",
+      });
+      return;
+    } finally {
+      window.clearTimeout(timeoutId);
+    }
 
     if (!response.ok) {
       setSubmitState({ status: "error", message: data?.error ?? "預約送出失敗，請稍後再試。" });
