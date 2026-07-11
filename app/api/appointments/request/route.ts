@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { getAvailableSlots } from "@/lib/booking";
+import { activeAppointmentStatuses, getAvailableSlots } from "@/lib/booking";
 import { addMinutes, makeDateTime } from "@/lib/time";
 import { prisma } from "@/lib/prisma";
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
@@ -87,7 +87,7 @@ export async function POST(request: NextRequest) {
       const overlapping = await tx.appointment.findFirst({
         where: {
           staffId: staff.id,
-          status: { in: ["pending", "confirmed", "completed"] },
+          status: { in: activeAppointmentStatuses },
           startAt: { lt: endAt },
           endAt: { gt: startAt },
         },
@@ -133,7 +133,7 @@ export async function POST(request: NextRequest) {
       });
 
       return created;
-    });
+    }, { timeout: 10000 });
 
     return NextResponse.json(
       {
