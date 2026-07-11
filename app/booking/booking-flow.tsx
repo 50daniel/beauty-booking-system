@@ -48,6 +48,13 @@ type BookingFlowProps = {
 
 type PaymentMethod = "course" | "wallet";
 
+type AppointmentResult = {
+  id: string;
+  status?: string;
+  serviceName: string;
+  staffName?: string;
+};
+
 type SubmitState =
   | { status: "idle"; message: string }
   | { status: "loading"; message: string }
@@ -126,6 +133,8 @@ export function BookingFlow({
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    const form = event.currentTarget;
+
     if (!selectedSlot || !selectedService || !selectedStaff) {
       setSubmitState({ status: "error", message: "請先選擇療程、老師與預約時間。" });
       return;
@@ -139,8 +148,27 @@ export function BookingFlow({
       return;
     }
 
-    const formData = new FormData(event.currentTarget);
+    const formData = new FormData(form);
     setSubmitState({ status: "loading", message: "正在送出預約..." });
+
+    function showSuccess(appointment: AppointmentResult | null) {
+      form.reset();
+      setSubmitState({
+        status: "success",
+        appointmentId: appointment?.id ?? "",
+        message: `已送出 ${appointment?.serviceName ?? selectedService?.name ?? "所選療程"} 預約，等待店家確認。`,
+      });
+      window.requestAnimationFrame(() => {
+        resultRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+      });
+    }
+
+    const lookupInput = {
+      serviceId,
+      staffId,
+      date,
+      startMinute: selectedSlot.startMinute,
+    };
 
     const controller = new AbortController();
     const timeoutId = window.setTimeout(() => controller.abort(), 25000);
@@ -153,16 +181,19 @@ export function BookingFlow({
         headers: { "Content-Type": "application/json" },
         signal: controller.signal,
         body: JSON.stringify({
-          serviceId,
-          staffId,
-          date,
-          startMinute: selectedSlot.startMinute,
+          ...lookupInput,
           paymentMethod,
           customerNote: getFormValue(formData, "customerNote"),
         }),
       });
       data = await readJsonResponse(response);
     } catch (error) {
+      const confirmedAppointment = await findSubmittedAppointment(lookupInput);
+      if (confirmedAppointment) {
+        showSuccess(confirmedAppointment);
+        return;
+      }
+
       setSubmitState({
         status: "error",
         message:
@@ -180,15 +211,7 @@ export function BookingFlow({
       return;
     }
 
-    event.currentTarget.reset();
-    setSubmitState({
-      status: "success",
-      appointmentId: data?.appointment?.id ?? "",
-      message: `已送出 ${data?.appointment?.serviceName ?? selectedService.name} 預約，等待店家確認。`,
-    });
-    window.requestAnimationFrame(() => {
-      resultRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
-    });
+    showSuccess(data?.appointment ?? null);
   }
 
   return (
@@ -364,4 +387,36 @@ async function readJsonResponse(response: Response) {
   } catch {
     return null;
   }
+}
+
+async function findSubmittedAppointment(input: {
+  serviceId: string;
+  staffId: string;
+  date: string;
+  startMinute: number;
+}) {
+  const params = new URLSearchParams({
+    serviceId: input.serviceId,
+    staffId: input.staffId,
+    date: input.date,
+    startMinute: String(input.startMinute),
+  });
+
+  for (let attempt = 0; attempt < 8; attempt += 1) {
+    try {
+      const response = await fetch(`/api/appointments/lookup?${params.toString()}`, {
+        cache: "no-store",
+      });
+      const data = await readJsonResponse(response);
+      if (response.ok && data?.appointment) {
+        return data.appointment as AppointmentResult;
+      }
+    } catch {
+      // Keep polling briefly; this path is only used after an uncertain submit.
+    }
+
+    await new Promise((resolve) => window.setTimeout(resolve, 1000));
+  }
+
+  return null;
 }
