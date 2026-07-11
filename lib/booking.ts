@@ -11,7 +11,7 @@ export async function getAvailableSlots(input: {
     prisma.service.findFirst({ where: { id: input.serviceId, active: true } }),
     prisma.staff.findFirst({
       where: { id: input.staffId, active: true },
-      include: { schedules: true, daySchedules: true, timeOff: true, services: true },
+      include: { schedules: true, services: true },
     }),
   ]);
 
@@ -20,14 +20,36 @@ export async function getAvailableSlots(input: {
   const canDoService = staff.services.some((item) => item.serviceId === service.id);
   if (!canDoService) return [];
 
-  const daySchedule = await prisma.staffDaySchedule.findUnique({
-    where: {
-      staffId_date: {
-        staffId: staff.id,
-        date: startOfLocalDay(input.date),
+  const dayStart = startOfLocalDay(input.date);
+  const dayEnd = endOfLocalDay(input.date);
+  const [daySchedule, setting, confirmed, timeOff] = await Promise.all([
+    prisma.staffDaySchedule.findUnique({
+      where: {
+        staffId_date: {
+          staffId: staff.id,
+          date: dayStart,
+        },
       },
-    },
-  });
+    }),
+    prisma.businessSetting.findUnique({ where: { id: "default" } }),
+    prisma.appointment.findMany({
+      where: {
+        staffId: staff.id,
+        status: { in: activeAppointmentStatuses },
+        startAt: { lte: dayEnd },
+        endAt: { gte: dayStart },
+      },
+      include: { service: true },
+    }),
+    prisma.staffTimeOff.findMany({
+      where: {
+        staffId: staff.id,
+        startAt: { lte: dayEnd },
+        endAt: { gte: dayStart },
+      },
+    }),
+  ]);
+
   if (daySchedule?.status === "time_off") return [];
 
   const dayOfWeek = getDayOfWeek(input.date);
@@ -41,26 +63,7 @@ export async function getAvailableSlots(input: {
     : staff.schedules.filter((schedule) => schedule.dayOfWeek === dayOfWeek);
   if (!schedules.length) return [];
 
-  const setting = await prisma.businessSetting.findUnique({ where: { id: "default" } });
   if (setting?.closedDates.includes(input.date)) return [];
-
-  const confirmed = await prisma.appointment.findMany({
-    where: {
-      staffId: staff.id,
-      status: { in: activeAppointmentStatuses },
-      startAt: { lte: endOfLocalDay(input.date) },
-      endAt: { gte: startOfLocalDay(input.date) },
-    },
-    include: { service: true },
-  });
-
-  const timeOff = await prisma.staffTimeOff.findMany({
-    where: {
-      staffId: staff.id,
-      startAt: { lte: endOfLocalDay(input.date) },
-      endAt: { gte: startOfLocalDay(input.date) },
-    },
-  });
 
   const slots: Array<{ startMinute: number; endMinute: number; label: string }> = [];
   for (const schedule of schedules) {
