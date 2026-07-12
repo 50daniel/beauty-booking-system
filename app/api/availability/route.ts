@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { getAvailableSlots } from "@/lib/booking";
+import { getAvailabilitySlots } from "@/lib/booking";
 
 const availabilityQuery = z.object({
   serviceId: z.string().min(1),
@@ -19,6 +19,6 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "查詢條件不完整" }, { status: 400 });
   }
 
-  const slots = await getAvailableSlots(parsed.data);
+  const slots = await getAvailabilitySlots(parsed.data);
   return NextResponse.json({ slots });
 }

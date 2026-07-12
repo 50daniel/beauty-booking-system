@@ -7,6 +7,15 @@ export async function getAvailableSlots(input: {
   staffId: string;
   date: string;
 }) {
+  const slots = await getAvailabilitySlots(input);
+  return slots.filter((slot) => slot.available).map(({ available: _available, unavailableReason: _unavailableReason, ...slot }) => slot);
+}
+
+export async function getAvailabilitySlots(input: {
+  serviceId: string;
+  staffId: string;
+  date: string;
+}) {
   const [service, staff] = await Promise.all([
     prisma.service.findFirst({ where: { id: input.serviceId, active: true } }),
     prisma.staff.findFirst({
@@ -65,7 +74,7 @@ export async function getAvailableSlots(input: {
 
   if (setting?.closedDates.includes(input.date)) return [];
 
-  const slots: Array<{ startMinute: number; endMinute: number; label: string }> = [];
+  const slots: Array<{ startMinute: number; endMinute: number; label: string; available: boolean; unavailableReason?: string }> = [];
   for (const schedule of schedules) {
     for (
       let startMinute = schedule.startMinute;
@@ -82,13 +91,13 @@ export async function getAvailableSlots(input: {
       });
       const hasTimeOffConflict = timeOff.some((item) => startAt < item.endAt && item.startAt < endAt);
 
-      if (!hasAppointmentConflict && !hasTimeOffConflict) {
-        slots.push({
-          startMinute,
-          endMinute: startMinute + service.durationMinutes,
-          label: `${String(Math.floor(startMinute / 60)).padStart(2, "0")}:${String(startMinute % 60).padStart(2, "0")}`,
-        });
-      }
+      slots.push({
+        startMinute,
+        endMinute: startMinute + service.durationMinutes,
+        label: `${String(Math.floor(startMinute / 60)).padStart(2, "0")}:${String(startMinute % 60).padStart(2, "0")}`,
+        available: !hasAppointmentConflict && !hasTimeOffConflict,
+        unavailableReason: hasAppointmentConflict ? "此時段已有預約" : hasTimeOffConflict ? "老師休假" : undefined,
+      });
     }
   }
 

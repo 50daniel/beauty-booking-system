@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 import { requireMember } from "@/lib/member-auth";
 import { reserveAppointmentPayment } from "@/lib/member-billing";
+import { getMemberBookingAccount } from "@/lib/member-booking-account";
 
 const optionalText = z.preprocess((value) => {
   if (typeof value !== "string") return value;
@@ -135,6 +136,8 @@ export async function POST(request: NextRequest) {
       return created;
     }, { timeout: 10000 });
 
+    const account = await getMemberBookingAccount(member.id);
+
     return NextResponse.json(
       {
         appointment: {
@@ -146,6 +149,7 @@ export async function POST(request: NextRequest) {
           startAt: appointment.startAt,
           endAt: appointment.endAt,
         },
+        account,
       },
       { status: 201 },
     );

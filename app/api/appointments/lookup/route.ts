@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { requireMember } from "@/lib/member-auth";
+import { getMemberBookingAccount } from "@/lib/member-booking-account";
 import { makeDateTime } from "@/lib/time";
 import { prisma } from "@/lib/prisma";
 
@@ -49,16 +50,21 @@ export async function GET(request: NextRequest) {
     orderBy: { createdAt: "desc" },
   });
 
+  if (!appointment) {
+    return NextResponse.json({ appointment: null });
+  }
+
+  const account = await getMemberBookingAccount(member.id);
+
   return NextResponse.json({
-    appointment: appointment
-      ? {
-          id: appointment.id,
-          status: appointment.status,
-          serviceName: appointment.service.name,
-          staffName: appointment.staff.name,
-          startAt: appointment.startAt,
-          endAt: appointment.endAt,
-        }
-      : null,
+    appointment: {
+      id: appointment.id,
+      status: appointment.status,
+      serviceName: appointment.service.name,
+      staffName: appointment.staff.name,
+      startAt: appointment.startAt,
+      endAt: appointment.endAt,
+    },
+    account,
   });
 }

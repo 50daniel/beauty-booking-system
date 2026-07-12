@@ -24,6 +24,8 @@ type Slot = {
   startMinute: number;
   endMinute: number;
   label: string;
+  available?: boolean;
+  unavailableReason?: string;
 };
 
 type CourseBalance = {
@@ -55,6 +57,16 @@ type AppointmentResult = {
   staffName?: string;
 };
 
+type BookingAccount = {
+  courseBalances: CourseBalance[];
+  walletBalance: number;
+};
+
+type SubmittedAppointmentResult = {
+  appointment: AppointmentResult;
+  account?: BookingAccount;
+};
+
 type SubmitState =
   | { status: "idle"; message: string }
   | { status: "loading"; message: string }
@@ -76,6 +88,8 @@ export function BookingFlow({
   const [date, setDate] = useState(today);
   const [slots, setSlots] = useState<Slot[]>([]);
   const [selectedSlot, setSelectedSlot] = useState<Slot | null>(null);
+  const [currentCourseBalances, setCurrentCourseBalances] = useState(courseBalances);
+  const [currentWalletBalance, setCurrentWalletBalance] = useState(walletBalance);
   const [loadingStaff, setLoadingStaff] = useState(false);
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [submitState, setSubmitState] = useState<SubmitState>({ status: "idle", message: "" });
@@ -86,11 +100,11 @@ export function BookingFlow({
   );
   const selectedStaff = useMemo(() => staff.find((item) => item.id === staffId), [staff, staffId]);
   const selectedBalance = useMemo(
-    () => courseBalances.find((balance) => balance.serviceId === serviceId),
-    [courseBalances, serviceId],
+    () => currentCourseBalances.find((balance) => balance.serviceId === serviceId),
+    [currentCourseBalances, serviceId],
   );
   const canUseCourse = Boolean(selectedBalance && selectedBalance.availableSessions > 0);
-  const canUseWallet = Boolean(selectedService && walletBalance >= selectedService.price);
+  const canUseWallet = Boolean(selectedService && currentWalletBalance >= selectedService.price);
 
   useEffect(() => {
     if (!serviceId) return;
@@ -151,7 +165,19 @@ export function BookingFlow({
     const formData = new FormData(form);
     setSubmitState({ status: "loading", message: "正在送出預約..." });
 
-    function showSuccess(appointment: AppointmentResult | null) {
+    function showSuccess(appointment: AppointmentResult | null, account?: BookingAccount) {
+      if (account) {
+        setCurrentCourseBalances(account.courseBalances);
+        setCurrentWalletBalance(account.walletBalance);
+      }
+      setSlots((currentSlots) =>
+        currentSlots.map((slot) =>
+          slot.startMinute === lookupInput.startMinute
+            ? { ...slot, available: false, unavailableReason: "已送出預約" }
+            : slot,
+        ),
+      );
+      setSelectedSlot(null);
       form.reset();
       setSubmitState({
         status: "success",
@@ -188,9 +214,9 @@ export function BookingFlow({
       });
       data = await readJsonResponse(response);
     } catch (error) {
-      const confirmedAppointment = await findSubmittedAppointment(lookupInput);
-      if (confirmedAppointment) {
-        showSuccess(confirmedAppointment);
+      const confirmedResult = await findSubmittedAppointment(lookupInput);
+      if (confirmedResult) {
+        showSuccess(confirmedResult.appointment, confirmedResult.account);
         return;
       }
 
@@ -211,7 +237,7 @@ export function BookingFlow({
       return;
     }
 
-    showSuccess(data?.appointment ?? null);
+    showSuccess(data?.appointment ?? null, data?.account);
   }
 
   return (
@@ -242,7 +268,7 @@ export function BookingFlow({
           </div>
           <div className="servicePicker">
             {initialServices.map((service) => {
-              const balance = courseBalances.find((item) => item.serviceId === service.id);
+              const balance = currentCourseBalances.find((item) => item.serviceId === service.id);
               return (
                 <button
                   className={`selectCard ${service.id === serviceId ? "isActive" : ""}`}
@@ -289,16 +315,22 @@ export function BookingFlow({
             {!loadingSlots && slots.length === 0 ? <div className="emptyState">這一天目前沒有可預約時段。</div> : null}
             {!loadingSlots && slots.length > 0 ? (
               <div className="slotGrid">
-                {slots.map((slot) => (
-                  <button
-                    className={`slotButton ${selectedSlot?.startMinute === slot.startMinute ? "isActive" : ""}`}
-                    key={slot.startMinute}
-                    onClick={() => setSelectedSlot(slot)}
-                    type="button"
-                  >
-                    {slot.label}
-                  </button>
-                ))}
+                {slots.map((slot) => {
+                  const isAvailable = slot.available !== false;
+                  return (
+                    <button
+                      className={`slotButton ${selectedSlot?.startMinute === slot.startMinute ? "isActive" : ""}`}
+                      disabled={!isAvailable}
+                      key={slot.startMinute}
+                      onClick={() => setSelectedSlot(slot)}
+                      title={isAvailable ? undefined : slot.unavailableReason ?? "此時段不可預約"}
+                      type="button"
+                    >
+                      {slot.label}
+                      {!isAvailable ? <span>{slot.unavailableReason ?? "不可預約"}</span> : null}
+                    </button>
+                  );
+                })}
               </div>
             ) : null}
           </div>
@@ -344,7 +376,7 @@ export function BookingFlow({
               />
               <strong>使用儲值金</strong>
               <span>
-                餘額 NT${walletBalance.toLocaleString("zh-TW")}
+                餘額 NT${currentWalletBalance.toLocaleString("zh-TW")}
                 {selectedService ? ` / 本次 NT${selectedService.price.toLocaleString("zh-TW")}` : ""}
               </span>
             </label>
@@ -409,7 +441,7 @@ async function findSubmittedAppointment(input: {
       });
       const data = await readJsonResponse(response);
       if (response.ok && data?.appointment) {
-        return data.appointment as AppointmentResult;
+        return data as SubmittedAppointmentResult;
       }
     } catch {
       // Keep polling briefly; this path is only used after an uncertain submit.
